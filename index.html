@@ -1,0 +1,406 @@
+<html>
+<head>
+  <meta charset=utf-8 />
+  <title>UCR Mapping</title>
+  <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
+
+  <!-- Load Leaflet from CDN-->
+  <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.css" />
+  <script src="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.js"></script>
+
+  <!-- Load Esri Leaflet from CDN -->
+  <script src="http://cdn-geoweb.s3.amazonaws.com/esri-leaflet/1.0.0-rc.2/esri-leaflet.js"></script>
+
+  <!-- Load jQuery from CDN -->
+  <script src="https://code.jquery.com/jquery-2.1.3.min.js"></script>
+
+  <!-- Load geostats lib -->
+  <script src="./geostats.js"></script>
+
+  <!-- Load UCR data  -->
+  <script src="./mydata/ucr_vc.js"></script>
+  <script src="./mydata/ucr_mur.js"></script>
+  <script src="./mydata/ucr_rape.js"></script>
+  <script src="./mydata/ucr_rob.js"></script>
+  <script src="./mydata/ucr_agg.js"></script>
+
+  <style>
+    body {margin:0;padding:0;}
+    #map {position: absolute;top:50;bottom:0;right:0;left:0;}
+  </style>
+
+</head>
+<body>
+
+<style>
+  #top_panel {
+    margin-bottom: 5px;
+    margin-top: 5px;
+    margin-left: 10px;
+  }
+
+#sel-year {
+   position:absolute;
+   z-index:1;
+}
+  #crime-wrapper {
+    position: absolute;
+    top: 0px;
+    right: 10px;
+    z-index: 10;
+    background: white;
+    padding: 10px;
+  }
+.info {
+	padding: 6px 8px;
+	font: 14px/16px Arial, Helvetica, sans-serif;
+	background: white;
+	background: rgba(255,255,255,0.8);
+	box-shadow: 0 0 15px rgba(0,0,0,0.2);
+	border-radius: 5px;
+	}
+.info h4 {
+	margin: 0 0 5px;
+	color: #777;
+}
+
+.legend {
+	text-align: left;
+	line-height: 18px;
+	color: #555;
+	width: 100px;
+	}
+.legend i {
+	width: 18px;
+	height: 18px;
+	float: left;
+	margin-right: 8px;
+	opacity: 1;
+}
+
+</style>
+
+<div id="top_panel">
+<b>U.S. Crime Rates per 100,000 persons in large Cities</b>
+<br><em>Based on FBI-UCR data</em>
+</div>
+
+<div id="map"></div>
+
+<div id="crime-wrapper">
+  <select id="crimetype">
+    <option value="vc_per100k" selected>Violent Crime, all<options>
+    <option value="murder_per100k">Murder<options>
+    <option value="rape_per100k">Rape<options>
+    <option value="rob_per100k">Robbery<options>
+    <option value="agg_per100k" >Aggrevated Assault<options>
+  </select>
+
+  <select name="selyear" id="selyear">
+    <option value="1960" >1960<options>
+    <option value="1961">1961<options>
+    <option value="1962">1962<options>
+    <option value="1963" >1963<options>
+    <option value="1964" >1964<options>
+    <option value="1965" >1965<options>
+    <option value="1966" >1966<options>
+    <option value="1967" >1967<options>
+    <option value="1968" >1968<options>
+    <option value="1969" >1969<options>
+    <option value="1970" >1970<options>
+    <option value="1971">1971<options>
+    <option value="1972">1972<options>
+    <option value="1973" >1973<options>
+    <option value="1974" >1974<options>
+    <option value="1975" >1975<options>
+    <option value="1976" >1976<options>
+    <option value="1977" >1977<options>
+    <option value="1978" >1978<options>
+    <option value="1979" >1979<options>
+    <option value="1980" >1980<options>
+    <option value="1981">1981<options>
+    <option value="1982">1982<options>
+    <option value="1983" >1983<options>
+    <option value="1984" >1984<options>
+    <option value="1985" >1985<options>
+    <option value="1986" >1986<options>
+    <option value="1987" >1987<options>
+    <option value="1988" >1988<options>
+    <option value="1989" >1989<options>
+    <option value="1990" >1990<options>
+    <option value="1991">1991<options>
+    <option value="1992">1992<options>
+    <option value="1993" >1993<options>
+    <option value="1994" >1994<options>
+    <option value="1995" >1995<options>
+    <option value="1996" >1996<options>
+    <option value="1997" >1997<options>
+    <option value="1998" >1998<options>
+    <option value="1999" >1999<options>
+    <option value="2000" >2000<options>
+    <option value="2001" >2001<options>
+    <option value="2002" >2002<options>
+    <option value="2003" >2003<options>
+    <option value="2004" >2004<options>
+    <option value="2005" >2005<options>
+    <option value="2006" >2006<options>
+    <option value="2007" >2007<options>
+    <option value="2008" >2008<options>
+    <option value="2009" >2009<options>
+    <option value="2010" selected>2010<options>
+  </select>
+</div>
+
+
+<script>
+  var map = L.map('map').setView([39, -100], 4);
+  var currentQuantileArray = [];
+  var currentRate = $('#crimetype').val();
+  var currentYear = $('#selyear').val(); 
+  var crimePretty = {
+	"vc_per100k" : "Violent Crimes, all",
+      	"murder_per100k" : "Murder & manslaughter",
+      	"rape_per100k" : "Rape",
+      	"rob_per100k" : "Robbery",
+      	"agg_per100k" : "Aggrevated Assault"
+	};
+
+  var layer = L.esri.basemapLayer('Gray').addTo(map);
+
+/*
+  L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
+	attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors' }).addTo(map);
+*/
+
+/*
+L.tileLayer('https://{s}.tiles.mapbox.com/v3/{id}/{z}/{x}/{y}.png', {
+			maxZoom: 18,
+			attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, ' +
+				'<a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, ' +
+				'Imagery © <a href="http://mapbox.com">Mapbox</a>',
+			id: 'examples.map-20v6611k'
+		}).addTo(map);
+*/
+
+
+  var layerLabels;
+  var cities, newData;
+  var ucrdata = {
+	'vc_per100k': vc_data, 
+	'murder_per100k' : murder_data,
+	'rob_per100k' : rob_data,
+	'rape_per100k' : rape_data,
+	'agg_per100k' : agg_data
+  }
+
+  drawCrimeMap();
+
+function drawCrimeMap(){
+  currentRate = $('#crimetype').val();
+  currentYear = $('#selyear').val(); 
+   
+  newData = processData(ucrdata[currentRate]);
+  createJsonDataLayer(newData);
+  if (legendDiv) {
+	updateLegend();
+  }
+
+}
+
+
+// get color depending on rate value
+function getColor(d) {
+	return d > currentQuantileArray[6] ? '#800026' :
+	       d > currentQuantileArray[5] ? '#BD0026' :
+	       d > currentQuantileArray[4] ? '#E31A1C' :
+	       d > currentQuantileArray[3] ? '#FC4E2A' :
+	       d > currentQuantileArray[2] ? '#FD8D3C' :
+	       d > currentQuantileArray[1] ? '#FEB24C' :
+	       d > currentQuantileArray[1] ? '#FED976' :
+	                  		     '#FFEDA0';
+
+	/*
+	return d > 1000 ? '#800026' :
+	       d > 500  ? '#BD0026' :
+	       d > 200  ? '#E31A1C' :
+	       d > 100  ? '#FC4E2A' :
+	       d > 50   ? '#FD8D3C' :
+	       d > 20   ? '#FEB24C' :
+	       d > 10   ? '#FED976' :
+	                  '#FFEDA0';
+	*/
+}
+
+function processData(data) {
+
+   var newDataObjArray = [];
+   currentRateValArray = [];
+
+   console.log("Property is: " + currentRate + " and year is: " +  currentYear);
+   for (var feature in data.features) {
+       var properties = data.features[feature].properties;
+       for (var attribute in properties) {
+	  if (attribute == 'year' && properties[attribute] == currentYear) {
+		currentRateValArray.push(parseFloat(properties[currentRate]));
+		newDataObjArray.push(data.features[feature]);
+	  }
+       }
+  }
+
+  //calc te quantile breaks and assign it to our global
+  gs1 = new geostats(currentRateValArray);
+  //currentQuantileArray = gs1.getClassQuantile(6);
+
+  currentQuantileArray = gs1.getClassJenks(7);
+  //currentQuantileArray = gs1.getClassStdDeviation(7);
+  console.log("here in procdata and currentquantilearray is: " + currentQuantileArray);
+
+  // this will give us an array like: 
+  //[0, 0.576794407401426, 1.84614248527701, 3.43861217612572, 5.93072908429543, 9.9559548557183, 64.7619996512815]
+
+  var ucrdata2 = {
+   "type": "FeatureCollection",
+   "features": newDataObjArray
+  }
+  return ucrdata2;
+
+}  // end processData()
+
+function createJsonDataLayer(data) {
+   	cities = L.geoJson(data, {
+       	    pointToLayer: function(feature, latlng) {
+          	return L.circleMarker(latlng, 
+			{
+			radius: 6,
+			weight: 1,
+			opacity:1,
+			color: 'white',
+			//dashArray: '3',
+			fillOpacity: 0.8,
+			fillColor: getColor(feature.properties[currentRate])
+			}
+
+		/*
+		{
+              		fillColor: "#708598",
+               		color: '#537898',
+               		weight: 1,
+               		fillOpacity: 0.6
+               	}
+		*/
+	).on({
+            mouseover: function(e) {
+	            this.openPopup();
+                    this.setStyle({color: 'yellow'});
+            },
+            mouseout: function(e) {
+                    this.closePopup();
+                    this.setStyle({color: '#537898'});
+
+            }
+        });
+      }
+    }).addTo(map);
+
+    updatePropSymbols();
+
+} // end createJSONDataLayer()
+
+function updatePropSymbols() {
+       cities.eachLayer(function(layer) {
+
+       var props = layer.feature.properties;
+       var popupContent = "<b>" + props['citystate'] + "</b>, " + props['year'] + "<br>" + "<i> " + crimePretty[currentRate] + ": " + parseFloat(props[currentRate]).toFixed(2) + "</i>";
+
+       layer.bindPopup(popupContent);
+
+       });
+
+} // end updatePropSymbols
+
+var legend = L.control({position: 'bottomright'});
+var legendDiv = L.DomUtil.create('div', 'info legend');
+
+legend.onAdd = function (map) {
+
+	var grades = currentQuantileArray, //[0, 10, 20, 50, 100, 200, 500, 1000],
+	labels = [],
+		from, to;
+
+	for (var i = 0; i < grades.length; i++) {
+		from = grades[i];
+		to = grades[i + 1];
+
+		if (isNaN(to)) {
+			labels.push( '<i style="background:' + getColor(from + 1) + '"></i> ' + parseFloat(from).toFixed(0) + '+'); 
+		} else {
+			labels.push( '<i style="background:' + getColor(from + 1) + '"></i> ' + parseFloat(from).toFixed(0) + '&ndash;' + parseFloat(to).toFixed(0));
+		}
+
+		/*
+		labels.push(
+			'<i style="background:' + getColor(from + 1) + '"></i> ' +
+			parseFloat(from).toFixed(2) + (parseFloat(to).toFixed(2) ? '&ndash;' + parseFloat(to).toFixed(2) : '+'));
+		*/
+
+	}
+
+	//legendDiv.innerHTML = "<b>Legend</b> | Stats<br>" + labels.join('<br>');
+	legendDiv.innerHTML = '<b>Legend</b> | <span onclick="updateStats();">Stats</span><br>' + labels.join('<br>');
+	return legendDiv;
+
+};
+function updateStats() {
+	gs1.info();
+	var html = '<span onclick="updateLegend();">Legend</span> | <b>Stats</b><br>';
+	html += "N: " + gs1.stat_pop;
+	html += "<br>Min: " + gs1.stat_min.toFixed(1);
+	html += "<br>Max: " + gs1.stat_max.toFixed(1);
+	html += "<br>Mean: " + gs1.stat_mean.toFixed(1);
+	html += "<br>Median: " + gs1.stat_median.toFixed(1);
+	html += "<br>STDDEV: " + gs1.stat_stddev.toFixed(1);
+
+	legendDiv.innerHTML = html;
+	return legendDiv;
+}
+
+function updateLegend() {
+	var grades = currentQuantileArray, //[0, 10, 20, 50, 100, 200, 500, 1000],
+	labels = [],
+		from, to;
+
+	for (var i = 0; i < grades.length; i++) {
+		from = grades[i];
+		to = grades[i + 1];
+
+		if (isNaN(to)) {
+			labels.push( '<i style="background:' + getColor(from + 1) + '"></i> ' + parseFloat(from).toFixed(0) + '+'); 
+		} else {
+			labels.push( '<i style="background:' + getColor(from + 1) + '"></i> ' + parseFloat(from).toFixed(0) + '&ndash;' + parseFloat(to).toFixed(0));
+		}
+
+		/*
+		labels.push(
+			'<i style="background:' + getColor(from + 1) + '"></i> ' +
+			parseFloat(from).toFixed(2) + (parseFloat(to).toFixed(2) ? '&ndash;' + parseFloat(to).toFixed(2) : '+'));
+		*/
+	}
+
+	//legendDiv.innerHTML = labels.join('<br>');
+	//var html = '<a href="#" onclick="updateLegend();">Legend</a> | <b>Stats</b><br>';
+	legendDiv.innerHTML = '<b>Legend</b> | <span onclick="updateStats();">Stats</span><br>' + labels.join('<br>');
+	return legendDiv;
+}
+
+
+legend.addTo(map);
+
+
+$("#crimetype" ).change( drawCrimeMap );
+$("#selyear" ).change( drawCrimeMap );
+
+</script>
+
+</body>
+</html>
+
