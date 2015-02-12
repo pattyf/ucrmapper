@@ -318,9 +318,10 @@ function updatePropSymbols() {
        var props = layer.feature.properties;
 	var popupContents;
 	if (currentRate == 'cw_vc') { 
-       		popupContent = "<b>" + props['citystate'] + "</b>, " + props['year'] + "<br>" + "<i> " + crimePretty[currentRate] + ": $" + parseFloat(props[currentRate]).toFixed(0) + "</i> million per 100k persons.";
+       		//popupContent = "<b>" + props['citystate'] + "</b>, " + props['year'] + "<br>" + "<i> " + crimePretty[currentRate] + ": $" + parseFloat(props[currentRate]).toFixed(0).toLocaleString() + "</i> million per 100k persons.";
+       		popupContent = "<b>" + props['citystate'] + "</b>, " + props['year'] + "<br>" + "<i> " + crimePretty[currentRate] + ": $" + parseInt(props[currentRate]).toLocaleString() + "</i> million per 100k persons.";
 	} else {
-       		popupContent = "<b>" + props['citystate'] + "</b>, " + props['year'] + "<br>" + "<i> " + crimePretty[currentRate] + ": " + parseFloat(props[currentRate]).toFixed(2) + "</i> per 100k persons.";
+       		popupContent = "<b>" + props['citystate'] + "</b>, " + props['year'] + "<br>" + "<i> " + crimePretty[currentRate] + ": " + parseInt(props[currentRate]).toLocaleString() + "</i> per 100k persons.";
 	}
 
        layer.bindPopup(popupContent);
@@ -343,17 +344,12 @@ legend.onAdd = function (map) {
 		to = grades[i + 1];
 
 		if (isNaN(to)) {
-			labels.push( '<i style="background:' + getColor(from + 1) + '"></i> ' + parseFloat(from).toFixed(0) + '+'); 
+			//labels.push( '<i style="background:' + getColor(from + 1) + '"></i> ' + parseFloat(from).toFixed(0) + '+'); 
+			labels.push( '<i style="background:' + getColor(from + 1) + '"></i> ' + parseInt(from).toLocaleString() + '+'); 
 		} else {
-			labels.push( '<i style="background:' + getColor(from + 1) + '"></i> ' + parseFloat(from).toFixed(0) + '&ndash;' + parseFloat(to).toFixed(0));
+			//labels.push( '<i style="background:' + getColor(from + 1) + '"></i> ' + parseFloat(from).toFixed(0) + '&ndash;' + parseFloat(to).toFixed(0));
+			labels.push( '<i style="background:' + getColor(from + 1) + '"></i> ' + parseInt(from).toLocaleString() + '&ndash;' + parseFloat(to).toFixed(0));
 		}
-
-		/*
-		labels.push(
-			'<i style="background:' + getColor(from + 1) + '"></i> ' +
-			parseFloat(from).toFixed(2) + (parseFloat(to).toFixed(2) ? '&ndash;' + parseFloat(to).toFixed(2) : '+'));
-		*/
-
 	}
 
 	//legendDiv.innerHTML = '<b>Legend</b> | <span onclick="updateStats();">Stats</span><br> millions per 100k<br>' + labels.join('<br>');
@@ -399,16 +395,13 @@ function updateLegend() {
 		to = grades[i + 1];
 
 		if (isNaN(to)) {
-			labels.push( '<i style="background:' + getColor(from + 1) + '"></i> ' + parseFloat(from).toFixed(0) + '+'); 
+			//labels.push( '<i style="background:' + getColor(from + 1) + '"></i> ' + parseFloat(from).toFixed(0) + '+'); 
+			labels.push( '<i style="background:' + getColor(from + 1) + '"></i> ' + parseInt(from).toLocaleString() + '+'); 
 		} else {
-			labels.push( '<i style="background:' + getColor(from + 1) + '"></i> ' + parseFloat(from).toFixed(0) + '&ndash;' + parseFloat(to).toFixed(0));
+			//labels.push( '<i style="background:' + getColor(from + 1) + '"></i> ' + parseFloat(from).toFixed(0) + '&ndash;' + parseFloat(to).toFixed(0));
+			labels.push( '<i style="background:' + getColor(from + 1) + '"></i> ' + parseInt(from).toLocaleString() + '&ndash;' + parseFloat(to).toFixed(0));
 		}
 
-		/*
-		labels.push(
-			'<i style="background:' + getColor(from + 1) + '"></i> ' +
-			parseFloat(from).toFixed(2) + (parseFloat(to).toFixed(2) ? '&ndash;' + parseFloat(to).toFixed(2) : '+'));
-		*/
 	}
 
 	var legHeader = '<b>Legend</b> | <span onclick="updateStats();">Stats</span><p> ';
