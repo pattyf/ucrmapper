@@ -12,17 +12,20 @@
   <script src="http://cdn-geoweb.s3.amazonaws.com/esri-leaflet/1.0.0-rc.2/esri-leaflet.js"></script>
 
   <!-- Load jQuery from CDN -->
-  <script src="https://code.jquery.com/jquery-2.1.3.min.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+  <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.2/themes/smoothness/jquery-ui.css" />
+  <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.2/jquery-ui.min.js"></script>
 
   <!-- Load geostats lib -->
   <script src="./geostats.js"></script>
 
   <!-- Load UCR data  -->
-  <script src="./mydata/ucr_vc.js"></script>
-  <script src="./mydata/ucr_mur.js"></script>
-  <script src="./mydata/ucr_rape.js"></script>
-  <script src="./mydata/ucr_rob.js"></script>
-  <script src="./mydata/ucr_agg.js"></script>
+  <script src="./mydata/ucr_city50k_vc.js"></script>
+  <script src="./mydata/ucr_city50k_cwvc.js"></script>
+  <script src="./mydata/ucr_city50k_mur.js"></script>
+  <script src="./mydata/ucr_city50k_rape.js"></script>
+  <script src="./mydata/ucr_city50k_rob.js"></script>
+  <script src="./mydata/ucr_city50k_agg.js"></script>
 
   <style>
     body {margin:0;padding:0;}
@@ -31,7 +34,6 @@
 
 </head>
 <body>
-
 <style>
   #top_panel {
     margin-bottom: 5px;
@@ -68,7 +70,7 @@
 	text-align: left;
 	line-height: 18px;
 	color: #555;
-	width: 100px;
+	width: 150px;
 	}
 .legend i {
 	width: 18px;
@@ -81,8 +83,8 @@
 </style>
 
 <div id="top_panel">
-<b>U.S. Crime Rates per 100,000 persons in large Cities</b>
-<br><em>Based on FBI-UCR data</em>
+<b>U.S. Crime Rates per 100,000 persons in large Cities</b> ** <em>DRAFT</em> **
+<br><em>Based on FBI UCR data</em> 
 </div>
 
 <div id="map"></div>
@@ -90,6 +92,7 @@
 <div id="crime-wrapper">
   <select id="crimetype">
     <option value="vc_per100k" selected>Violent Crime, all<options>
+    <option value="cw_vc">Violent Crime, cost weighted<options>
     <option value="murder_per100k">Murder<options>
     <option value="rape_per100k">Rape<options>
     <option value="rob_per100k">Robbery<options>
@@ -162,8 +165,10 @@
       	"murder_per100k" : "Murder & manslaughter",
       	"rape_per100k" : "Rape",
       	"rob_per100k" : "Robbery",
-      	"agg_per100k" : "Aggrevated Assault"
+      	"agg_per100k" : "Aggrevated Assault",
+      	"cw_vc" : "Cost-weighted violent crime"
 	};
+  var legendHeader = "";
 
   var layer = L.esri.basemapLayer('Gray').addTo(map);
 
@@ -187,6 +192,7 @@ L.tileLayer('https://{s}.tiles.mapbox.com/v3/{id}/{z}/{x}/{y}.png', {
   var cities, newData;
   var ucrdata = {
 	'vc_per100k': vc_data, 
+	'cw_vc': cwvc_data, 
 	'murder_per100k' : murder_data,
 	'rob_per100k' : rob_data,
 	'rape_per100k' : rape_data,
@@ -310,7 +316,13 @@ function updatePropSymbols() {
        cities.eachLayer(function(layer) {
 
        var props = layer.feature.properties;
-       var popupContent = "<b>" + props['citystate'] + "</b>, " + props['year'] + "<br>" + "<i> " + crimePretty[currentRate] + ": " + parseFloat(props[currentRate]).toFixed(2) + "</i>";
+	var popupContents;
+	if (currentRate == 'cw_vc') { 
+       		//popupContent = "<b>" + props['citystate'] + "</b>, " + props['year'] + "<br>" + "<i> " + crimePretty[currentRate] + ": $" + parseFloat(props[currentRate]).toFixed(0).toLocaleString() + "</i> million per 100k persons.";
+       		popupContent = "<b>" + props['citystate'] + "</b>, " + props['year'] + "<br>" + "<i> " + crimePretty[currentRate] + ": $" + parseInt(props[currentRate]).toLocaleString() + "</i> million per 100k persons.";
+	} else {
+       		popupContent = "<b>" + props['citystate'] + "</b>, " + props['year'] + "<br>" + "<i> " + crimePretty[currentRate] + ": " + parseInt(props[currentRate]).toLocaleString() + "</i> per 100k persons.";
+	}
 
        layer.bindPopup(popupContent);
 
@@ -318,7 +330,7 @@ function updatePropSymbols() {
 
 } // end updatePropSymbols
 
-var legend = L.control({position: 'bottomright'});
+var legend = L.control({position: 'topright'});
 var legendDiv = L.DomUtil.create('div', 'info legend');
 
 legend.onAdd = function (map) {
@@ -332,27 +344,36 @@ legend.onAdd = function (map) {
 		to = grades[i + 1];
 
 		if (isNaN(to)) {
-			labels.push( '<i style="background:' + getColor(from + 1) + '"></i> ' + parseFloat(from).toFixed(0) + '+'); 
+			//labels.push( '<i style="background:' + getColor(from + 1) + '"></i> ' + parseFloat(from).toFixed(0) + '+'); 
+			labels.push( '<i style="background:' + getColor(from + 1) + '"></i> ' + parseInt(from).toLocaleString() + '+'); 
 		} else {
-			labels.push( '<i style="background:' + getColor(from + 1) + '"></i> ' + parseFloat(from).toFixed(0) + '&ndash;' + parseFloat(to).toFixed(0));
+			//labels.push( '<i style="background:' + getColor(from + 1) + '"></i> ' + parseFloat(from).toFixed(0) + '&ndash;' + parseFloat(to).toFixed(0));
+			labels.push( '<i style="background:' + getColor(from + 1) + '"></i> ' + parseInt(from).toLocaleString() + '&ndash;' + parseFloat(to).toFixed(0));
 		}
-
-		/*
-		labels.push(
-			'<i style="background:' + getColor(from + 1) + '"></i> ' +
-			parseFloat(from).toFixed(2) + (parseFloat(to).toFixed(2) ? '&ndash;' + parseFloat(to).toFixed(2) : '+'));
-		*/
-
 	}
 
-	//legendDiv.innerHTML = "<b>Legend</b> | Stats<br>" + labels.join('<br>');
-	legendDiv.innerHTML = '<b>Legend</b> | <span onclick="updateStats();">Stats</span><br>' + labels.join('<br>');
+	//legendDiv.innerHTML = '<b>Legend</b> | <span onclick="updateStats();">Stats</span><br> millions per 100k<br>' + labels.join('<br>');
+	var legendHeader = '<b>Legend</b> | <span onclick="updateStats();">Stats</span><p> ';
+	if (currentRate == 'cw_vc') {
+		legendHeader += crimePretty[currentRate]+ ", millions per 100k persons";
+	} else {
+		legendHeader += crimePretty[currentRate]+ " per 100k persons";
+	}
+	legendHeader +="</p>";
+	legendDiv.innerHTML = legendHeader + labels.join('<br>');
 	return legendDiv;
 
 };
 function updateStats() {
 	gs1.info();
-	var html = '<span onclick="updateLegend();">Legend</span> | <b>Stats</b><br>';
+	var html = '<span onclick="updateLegend();">Legend</span> | <b>Stats</b><p>';
+	if (currentRate == 'cw_vc') {
+		html += crimePretty[currentRate]+ ", millions per 100k persons";
+	} else {
+		html += crimePretty[currentRate]+ " per 100k persons";
+	}
+	html +="</p>";
+
 	html += "N: " + gs1.stat_pop;
 	html += "<br>Min: " + gs1.stat_min.toFixed(1);
 	html += "<br>Max: " + gs1.stat_max.toFixed(1);
@@ -374,21 +395,23 @@ function updateLegend() {
 		to = grades[i + 1];
 
 		if (isNaN(to)) {
-			labels.push( '<i style="background:' + getColor(from + 1) + '"></i> ' + parseFloat(from).toFixed(0) + '+'); 
+			//labels.push( '<i style="background:' + getColor(from + 1) + '"></i> ' + parseFloat(from).toFixed(0) + '+'); 
+			labels.push( '<i style="background:' + getColor(from + 1) + '"></i> ' + parseInt(from).toLocaleString() + '+'); 
 		} else {
-			labels.push( '<i style="background:' + getColor(from + 1) + '"></i> ' + parseFloat(from).toFixed(0) + '&ndash;' + parseFloat(to).toFixed(0));
+			//labels.push( '<i style="background:' + getColor(from + 1) + '"></i> ' + parseFloat(from).toFixed(0) + '&ndash;' + parseFloat(to).toFixed(0));
+			labels.push( '<i style="background:' + getColor(from + 1) + '"></i> ' + parseInt(from).toLocaleString() + '&ndash;' + parseFloat(to).toFixed(0));
 		}
 
-		/*
-		labels.push(
-			'<i style="background:' + getColor(from + 1) + '"></i> ' +
-			parseFloat(from).toFixed(2) + (parseFloat(to).toFixed(2) ? '&ndash;' + parseFloat(to).toFixed(2) : '+'));
-		*/
 	}
 
-	//legendDiv.innerHTML = labels.join('<br>');
-	//var html = '<a href="#" onclick="updateLegend();">Legend</a> | <b>Stats</b><br>';
-	legendDiv.innerHTML = '<b>Legend</b> | <span onclick="updateStats();">Stats</span><br>' + labels.join('<br>');
+	var legHeader = '<b>Legend</b> | <span onclick="updateStats();">Stats</span><p> ';
+	if (currentRate == 'cw_vc') {
+		legHeader += crimePretty[currentRate]+ ", millions per 100k persons";
+	} else {
+		legHeader += crimePretty[currentRate]+ " per 100k persons";
+	}
+	legHeader +="</p>";
+	legendDiv.innerHTML = legHeader + labels.join('<br>');
 	return legendDiv;
 }
 

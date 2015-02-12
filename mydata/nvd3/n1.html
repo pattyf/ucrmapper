@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Nut Vis Leaflet Example</title>
+
+
+<link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.7.2/leaflet.css" />
+
+<style>
+
+body {
+  overflow-y:scroll;
+}
+
+text {
+  font: 12px sans-serif;
+}
+
+svg {
+  display: block;
+}
+
+#chart1 svg {
+  height: 500px;
+  min-width: 100px;
+  min-height: 100px;
+/*
+  margin: 50px;
+  Minimum height and width is a good idea to prevent negative SVG dimensions...
+  For example width should be =< margin.left + margin.right + 1,
+  of course 1 pixel for the entire chart would not be very useful, BUT should not have errors
+*/
+}
+#chart .nv-lineWithFocusChart circle.nv-point
+{
+    fill-opacity: 1;
+}
+
+</style>
+</head>
+
+<body>
+<div id="container">
+    <div id="map" style="width:450px; height: 550px; float:left;"></div>
+
+    <div id="right-panel" style="width:1000px; float:left;">
+	<h3>&nbsp;&nbsp;&nbsp;&nbsp;Station Data</h3>
+	<div id="my_nv_charts" >
+
+	<div id="chart" class='with-3d-shadow with-transitions'>
+	    <svg style="height: 500px;margin:20px"></svg>
+	</div>
+
+	<p>
+	<div style="margin:60px;">
+	   <b>Tips:</b>
+	    <br>
+	    <li>Mouse over the points on the top line chart to see data values.</li>
+	    <li>Move handles to change date range.</li>
+	    <li>Click on the Alviso Legend Icon (blue circle) to toggle on those values.</li>
+	    <li>Click <a href="http://maps.californiawetlands.net/ptest/leaflet/tmp/nvd3-master/patty/linewfc.html" target="_blank">here</a> to view all data for Alviso (~ 10k records). Note you need to wait a few seconds for it to load.</li>
+<!--
+	<p>
+	<br>
+	<b>Some of the Issues</b>
+	    <li>Linking and brushing between map and charts and within charts</li>
+	    <li>Temporal zooming - how much data to fetch/display and in what time intervals, </li>
+	    <li>Temporal zooming - how to move between time intervals - data by years, months, weeks,days. </li>
+	</p>
+-->
+	</div>
+	</div>
+
+    </div>
+
+</div>
+
+<script type="text/javascript" src="http://cdn.leafletjs.com/leaflet-0.7.2/leaflet.js"></script>
+<script src="./tmp/nvd3-master/lib/d3.v3.js"></script>
+<script src="./tmp/nvd3-master/nv.d3.js"></script>
+<script src="./tmp/nvd3-master/src/tooltip.js"></script>
+<script src="./tmp/nvd3-master/src/utils.js"></script>
+<script src="./tmp/nvd3-master/src/models/legend.js"></script>
+<script src="./tmp/nvd3-master/src/models/axis.js"></script>
+<script src="./tmp/nvd3-master/src/models/scatter.js"></script>
+<script src="./tmp/nvd3-master/src/models/line.js"></script>
+<script src="./tmp/nvd3-master/src/models/lineWithFocusChart.js"></script>
+<script src="./al_do_days.js"></script>
+
+<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.16/jquery-ui.min.js"></script>
+<link rel="stylesheet" type="text/css" href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.16/themes/base/jquery-ui.css"/>
+<link href="./tmp/nvd3-master/src/nv.d3.css" rel="stylesheet" type="text/css">
+
+<script>
+
+    var map = L.map('map').setView([37.5827, -122.1899], 10);
+
+    //add a tile layer to add to our map, in this case it's the 'standard' OpenStreetMap.org tile server
+     L.tileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+	attribution: '© <a href="http://openstreetmap.org">OpenStreetMap</a> contributors',
+        maxZoom: 18
+     }).addTo(map)
+
+    //define custom markier icon
+    //Source: http://harrywood.co.uk/maps/examples/leaflet/
+    //Extend the Default marker class
+    var RedIcon = L.Icon.Default.extend({
+	options: {
+	    iconUrl: 'marker-icon-red.png' 
+        }
+    });
+    var redIcon = new RedIcon();
+    /*
+        //Other things we could have changed
+            iconSize:     [25, 41], // size of the icon
+            shadowSize:   [50, 64], // size of the shadow
+            iconAnchor:   [12, 41]  // point of the icon which will correspond to marker's location
+            shadowAnchor: [4, 62],  // the same for the shadow
+            popupAnchor:  [-3, -76] // point from which the popup should open relative to the iconAnchor
+    */
+        
+
+    //Station - Icon Popup text
+    var alvisoHtml = '<b>NWIS 11169750</b><br/>Alviso Slough NR<br/>Site Type: Estuary<br />';
+    alvisoHtml += '<a href="http://waterservices.usgs.gov/nwis/iv/?site=11169750" target="_blank">Site Metadata</a><br /> Monthly Data <br />';
+
+
+    // NWIS Instantaneous values Rest service 
+    // http://waterservices.usgs.gov/rest/
+    //
+    // http://waterservices.usgs.gov/rest/IV-Service.html#Single
+    // or 
+    // http://waterservices.usgs.gov/rest/DV-Test-Tool.html
+    // DV = daily values (summed for the day)
+    // IV = instaneaus values, eg every 15 minutes
+    //
+
+    // this seems to be another service
+    //http://qwwebservices.usgs.gov/technical-documentation.html
+
+    //another station metadata site:
+    //http://waterservices.usgs.gov/nwis/iv/?site=11169750
+    //
+    //http://waterservices.usgs.gov/nwis/iv/?site=11169750&format=json
+    //http://qwwebservices.usgs.gov/Station/search?siteid=USGS-11169750
+
+    //&parameterCd=
+    //temp, degrees C: 00010
+    //salinity, water, unfiltered, milligrams per millileter at 25 degrees C (mg/mL@25C): 00096
+    //turbidity, Form Neph :63680
+
+    //Daily values
+    //http://nwis.waterservices.usgs.gov/nwis/iv/?site=11169750&parameterCd=00010&startDT=2010-11-22&endDT=2010-11-22
+
+    //We want to display the most recent instantaeos value for the station in the popup and then let the user
+    //select dates (last 7 days, last year by monty, all years by year, or specific ranges)
+
+    //This will return the most recent available data value for this station (11169750) and this parameter (00010)
+    //http://waterservices.usgs.gov/nwis/iv/?site=11169750&parameterCd=00010&format=json
+    //We can take that lastest value and use it to return one week or months worth of data prior to that date
+
+    //Then we can get the daily values for a specified time period
+    //http://waterservices.usgs.gov/nwis/iv/?format=waterml&sites=11169750&startDt=2013-12-22&endDt=2013-12-28&parameterCd=00010
+    // and then our code can roll up the data to hour, day, week, month, year *but > month = too much data
+    // i am trying to find a parameter that gives us these rolled up values
+
+
+
+    L.marker([37.44,-121.9983]).addTo(map).bindPopup(alvisoHtml);
+    L.marker([37.45,-122.04162], {icon: redIcon}).addTo(map).bindPopup('SFEI Alviso Sensor');
+    L.marker([37.49,-122.11303], {icon: redIcon}).addTo(map).bindPopup('SFEI Dumbartion Sensor').openPopup();
+
+
+    var popup = L.popup();
+    function onMapClick(e) {
+	//This is what happens when we click on map (not on a marker)
+        popup
+	    .setLatLng(e.latlng)
+	    .setContent("You clicked the map at " + e.latlng.toString())
+	    .openOn(map);
+    }
+
+    map.on('click', onMapClick);
+
+/* ************* NVD3 CHARTING FUNCTIONS **************************** */
+nv.addGraph(function() {
+  // Based on NVD3.js page of live examples
+  var chart = nv.models.lineWithFocusChart()
+    .options({
+	 margin: {left: 75, bottom: 60},
+         x: function(d) { return d[0] },
+         y: function(d) { return d[1] },
+	 showYAxis: true
+    });
+
+  chart.xAxis
+    .tickFormat(function(d) {
+      //return d3.time.format('%m/%d/%y')(new Date(d))
+        return d3.time.format('%m/%d/%y %H:%M')(new Date(d))
+    });
+
+  chart.x2Axis
+    .tickFormat(function(d) {
+      return d3.time.format('%m/%d/%y')(new Date(d))
+    });
+
+  chart.yAxis
+    .axisLabel('Dissolved Oxygen (mgL)')
+    .tickFormat(d3.format(',.2f'));
+
+  chart.y2Axis
+    .tickFormat(d3.format(',.2f'));
+
+  d3.select('#chart svg')
+      .datum(getAlData())
+      //.transition().duration(500)
+      .call(chart);
+
+  nv.utils.windowResize(chart.update);
+
+  return chart;
+
+});
+
+
+function setGrabHandles() {
+    var chart = nv.graphs[0];
+    var sdate = new Date("07/15/2013");
+    var edate = new Date("11/15/2013");
+    chart.brushExtent([sdate,edate]);
+    chart.update();
+}
+
+function toggleChartSeries(myindex) {
+   var hidden = [myindex];
+   var e = document.createEvent('UIEvents');
+   e.initUIEvent('click', true, true);
+   d3.select('.nv-legend')
+    .selectAll('.nv-series')
+    .filter(function(d, i){return hidden.indexOf(i) !== -1;})
+    .node()
+    .dispatchEvent(e);
+
+   //$('#my_nv_charts').show();
+}
+
+setTimeout(setGrabHandles,500);
+
+</script>
+</body>
+</html>
+
