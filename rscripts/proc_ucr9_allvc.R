@@ -395,7 +395,7 @@ d
 # http://zevross.com/blog/2014/09/10/quickly-create-online-and-interactive-plots-using-plot-ly/
 # doesn't work too much data
 #library(plotly)
-#py <- plotly(username="pfrontiera", key="f6i6cxrrse")
+#py <- plotly(username="pfrontiera", key="XXXX")
 #response<-py$ggplotly()
 #then check my plotly account for interactive plot
 
