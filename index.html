@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.css" />
   <script src="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.js"></script>
 
-  <!-- Load Esri Leaflet from CDN -->
+  <!-- Load Esri Leaflet from CDN so that we can use the esri background layer-->
   <script src="http://cdn-geoweb.s3.amazonaws.com/esri-leaflet/1.0.0-rc.2/esri-leaflet.js"></script>
 
   <!-- Load jQuery from CDN -->
@@ -27,32 +27,77 @@
   <script src="./mydata/ucr_city50k_rob.js"></script>
   <script src="./mydata/ucr_city50k_agg.js"></script>
 
+  <script>
+  $(function() {
+    $( "#about_dialog" ).dialog({
+      autoOpen: false,
+      show: {
+        effect: "blind",
+        duration: 1000
+      },
+      hide: {
+        effect: "explode",
+        duration: 1000
+      }
+    });
+ 
+    $( "#about_opener" ).click(function() {
+      $( "#about_dialog" ).dialog( "open" );
+    });
+  });
+
+  $(function() {
+    $( "#plot_dialog" ).dialog();
+  });
+
+  </script>
+
   <style>
     body {margin:0;padding:0;}
-    #map {position: absolute;top:50;bottom:0;right:0;left:0;}
+    #map {position: absolute;top:40;bottom:30;right:0;left:0;}
   </style>
 
 </head>
 <body>
+
 <style>
-  #top_panel {
+
+.ui-dialog-title{
+    font-size: 11 !important;
+}
+
+#top_panel {
     margin-bottom: 5px;
-    margin-top: 5px;
-    margin-left: 10px;
-  }
+    margin-top: 15px;
+    margin-left: 20px;
+    font: normal 14px "Helvetica",Arial;
+}
+
+#bottom_panel {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    margin: 0px;
+    padding: 5px;
+    background: white;
+    font: normal 11px "Helvetica",Arial;
+}
 
 #sel-year {
    position:absolute;
    z-index:1;
 }
-  #crime-wrapper {
+
+#crime-wrapper {
     position: absolute;
     top: 0px;
     right: 10px;
     z-index: 10;
     background: white;
     padding: 10px;
-  }
+}
+
 .info {
 	padding: 6px 8px;
 	font: 14px/16px Arial, Helvetica, sans-serif;
@@ -60,7 +105,8 @@
 	background: rgba(255,255,255,0.8);
 	box-shadow: 0 0 15px rgba(0,0,0,0.2);
 	border-radius: 5px;
-	}
+}
+
 .info h4 {
 	margin: 0 0 5px;
 	color: #777;
@@ -71,7 +117,8 @@
 	line-height: 18px;
 	color: #555;
 	width: 150px;
-	}
+}
+
 .legend i {
 	width: 18px;
 	height: 18px;
@@ -82,10 +129,7 @@
 
 </style>
 
-<div id="top_panel">
-<b>U.S. Crime Rates per 100,000 persons in large Cities</b> ** <em>DRAFT</em> **
-<br><em>Based on FBI UCR data</em> 
-</div>
+<div id="top_panel"> <b>U.S. Crime Rates per 100,000 persons in large Cities</b> ** <em>DRAFT</em> ** </div>
 
 <div id="map"></div>
 
@@ -154,6 +198,20 @@
   </select>
 </div>
 
+<div id="bottom_panel">
+<a href="https://github.com/pattyf/ucrmapper" target="_blank">Source Code</a> 
+| <a href="#" id="about_opener">About</a>
+</div>
+
+<div id="about_dialog" title="About this map">
+  <p>
+  This map is based on FBI Uniform Crime Report (UCR) data for cities with populations greater than or equal to 50,000 persons. This is provided for imformational purposes only and the data on the map may contain unintential errors.
+  </p>
+</div>
+ 
+<div id="plot_dialog" title="Time Series">
+  <p>put plot in here</p>
+</div>
 
 <script>
   var map = L.map('map').setView([39, -100], 4);
@@ -353,7 +411,8 @@ legend.onAdd = function (map) {
 	}
 
 	//legendDiv.innerHTML = '<b>Legend</b> | <span onclick="updateStats();">Stats</span><br> millions per 100k<br>' + labels.join('<br>');
-	var legendHeader = '<b>Legend</b> | <span onclick="updateStats();">Stats</span><p> ';
+	//var legendHeader = '<b>Legend</b> | <span onclick="updateStats();">Stats</span><p> ';
+	var legendHeader = '<b>Legend</b> | <button id="statsbut" onclick="updateStats();">Stats</button><p> ';
 	if (currentRate == 'cw_vc') {
 		legendHeader += crimePretty[currentRate]+ ", millions per 100k persons";
 	} else {
@@ -366,7 +425,8 @@ legend.onAdd = function (map) {
 };
 function updateStats() {
 	gs1.info();
-	var html = '<span onclick="updateLegend();">Legend</span> | <b>Stats</b><p>';
+	//var html = '<span onclick="updateLegend();">Legend</span> | <b>Stats</b><p>';
+	var html = '<button id="legendbut" onclick="updateLegend();">Legend</button> | <b>Stats</b><p>';
 	if (currentRate == 'cw_vc') {
 		html += crimePretty[currentRate]+ ", millions per 100k persons";
 	} else {
@@ -404,7 +464,8 @@ function updateLegend() {
 
 	}
 
-	var legHeader = '<b>Legend</b> | <span onclick="updateStats();">Stats</span><p> ';
+	//var legHeader = '<b>Legend</b> | <span onclick="updateStats();">Stats</span><p> ';
+	var legHeader = '<b>Legend</b> | <button id="statsbut" onclick="updateStats();">Stats</button><p> ';
 	if (currentRate == 'cw_vc') {
 		legHeader += crimePretty[currentRate]+ ", millions per 100k persons";
 	} else {
