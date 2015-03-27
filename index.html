@@ -30,7 +30,7 @@
   <script>
   $(function() {
     $( "#about_dialog" ).dialog({
-      autoOpen: false,
+      autoOpen: true,
       show: {
         effect: "blind",
         duration: 1000
@@ -45,7 +45,6 @@
       $( "#about_dialog" ).dialog( "open" );
     });
   });
-
   $(function() {
     $( "#plot_dialog" ).dialog();
   });
@@ -267,6 +266,11 @@ function drawCrimeMap(){
   currentYear = $('#selyear').val(); 
    
   newData = processData(ucrdata[currentRate]);
+  if (cities) {
+	map.removeLayer(cities);
+  } else {
+	console.log("no cities yet");
+  }
   createJsonDataLayer(newData);
   if (legendDiv) {
 	updateLegend();
@@ -358,11 +362,11 @@ function createJsonDataLayer(data) {
 	).on({
             mouseover: function(e) {
 	            this.openPopup();
-                    this.setStyle({color: 'yellow'});
+                    this.setStyle({color: '#537898'});
             },
             mouseout: function(e) {
                     this.closePopup();
-                    this.setStyle({color: '#537898'});
+                    this.setStyle({color: 'yellow'});
 
             }
         });
@@ -385,7 +389,7 @@ function updatePropSymbols() {
        		popupContent = "<b>" + props['citystate'] + "</b>, " + props['year'] + "<br>" + "<i> " + crimePretty[currentRate] + ": " + parseInt(props[currentRate]).toLocaleString() + "</i> per 100k persons.";
 	}
 
-       layer.bindPopup(popupContent);
+       layer.bindPopup(popupContent,{'offset': L.point(0,-5)}); //the offset removes the popup flicker
 
        });
 
