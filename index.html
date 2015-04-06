@@ -19,7 +19,7 @@
   <!-- Load geostats lib -->
   <script src="./geostats.js"></script>
 
-  <!-- Load UCR data  -->
+  <!-- Load UCR data for all years: quick hack but it works -->
   <script src="./mydata/ucr_city50k_vc.js"></script>
   <script src="./mydata/ucr_city50k_cwvc.js"></script>
   <script src="./mydata/ucr_city50k_mur.js"></script>
@@ -52,8 +52,8 @@
   </script>
 
   <style>
-    body {margin:0;padding:0;}
-    #map {position: absolute;top:40;bottom:30;right:0;left:0;}
+    body {margin:0;padding:0; background-color:white}
+    #map {position: absolute;top:50;bottom:10;right:30;left:30;}
   </style>
 
 </head>
@@ -62,14 +62,20 @@
 <style>
 
 .ui-dialog-title{
-    font-size: 11 !important;
+    font-size: 70% !important;
+}
+.ui-dialog-content{
+    font-size: 70% !important;
 }
 
+
 #top_panel {
-    margin-bottom: 5px;
-    margin-top: 15px;
-    margin-left: 20px;
-    font: normal 14px "Helvetica",Arial;
+   margin-bottom: 20px;
+   margin-top: 15px;
+   margin-left: 35px;
+   margin-right: 30px;
+   font-family: Verdana,Arial,sans-serif;
+   font-size: 110%;
 }
 
 #bottom_panel {
@@ -77,10 +83,13 @@
     bottom: 0;
     left: 0;
     right: 0;
+    width: 50;
     margin: 0px;
     padding: 5px;
-    background: white;
-    font: normal 11px "Helvetica",Arial;
+    background: rgba(255, 255, 255, 0.7);
+    font-family: Verdana,Arial,sans-serif;
+    font-size: 90%;
+    z-index: 1;
 }
 
 #sel-year {
@@ -95,6 +104,7 @@
     z-index: 10;
     background: white;
     padding: 10px;
+   margin-right: 30px;
 }
 
 .info {
@@ -128,9 +138,7 @@
 
 </style>
 
-<div id="top_panel"> <b>U.S. Crime Rates per 100,000 persons in large Cities</b> ** <em>DRAFT</em> ** </div>
-
-<div id="map"></div>
+<div id="top_panel">Violent Crime Rates in Large U.S. Cities, 1960 - 2010</div>
 
 <div id="crime-wrapper">
   <select id="crimetype">
@@ -197,23 +205,31 @@
   </select>
 </div>
 
+<div id="map">
+
 <div id="bottom_panel">
-<a href="https://github.com/pattyf/ucrmapper" target="_blank">Source Code</a> 
-| <a href="#" id="about_opener">About</a>
+<a href="#" id="about_opener">About</a>
+</div>
 </div>
 
 <div id="about_dialog" title="About this map">
   <p>
   This map is based on FBI Uniform Crime Report (UCR) data for cities with populations greater than or equal to 50,000 persons. This is provided for imformational purposes only and the data on the map may contain unintential errors.
   </p>
+  <p>
+  <a href="https://github.com/pattyf/ucrmapper" target="_blank">More...</a> 
+  </p>
 </div>
+
  
+<!--
 <div id="plot_dialog" title="Time Series">
 <div>
     <a href="https://plot.ly/~pfrontiera/26/" target="_blank" title="average murder rate per 100k persons vs year" style="display: block; text-align: center;"><img src="https://plot.ly/~pfrontiera/26.png" alt="average murder rate per 100k persons vs year" style="max-width: 100%;"  onerror="this.onerror=null;this.src='https://plot.ly/404.png';" /></a>
     <script data-plotly="pfrontiera:26" src="https://plot.ly/embed.js" async></script>
 </div>
 </div>
+-->
 
 <script>
   var map = L.map('map').setView([39, -100], 4);
@@ -259,7 +275,11 @@ L.tileLayer('https://{s}.tiles.mapbox.com/v3/{id}/{z}/{x}/{y}.png', {
 	'agg_per100k' : agg_data
   }
 
-  drawCrimeMap();
+var legend, legendDiv; 
+legend = L.control({position: 'topright'});
+legendDiv = L.DomUtil.create('div', 'info legend');
+
+drawCrimeMap();
 
 function drawCrimeMap(){
   currentRate = $('#crimetype').val();
@@ -272,6 +292,8 @@ function drawCrimeMap(){
 	console.log("no cities yet");
   }
   createJsonDataLayer(newData);
+
+
   if (legendDiv) {
 	updateLegend();
   }
@@ -395,45 +417,43 @@ function updatePropSymbols() {
 
 } // end updatePropSymbols
 
-var legend = L.control({position: 'topright'});
-var legendDiv = L.DomUtil.create('div', 'info legend');
 
 legend.onAdd = function (map) {
 
+	return updateLegend();
+};
+
+function updateLegend() {
 	var grades = currentQuantileArray, //[0, 10, 20, 50, 100, 200, 500, 1000],
 	labels = [],
-		from, to;
+	from, to;
 
 	for (var i = 0; i < grades.length; i++) {
 		from = grades[i];
 		to = grades[i + 1];
 
 		if (isNaN(to)) {
-			//labels.push( '<i style="background:' + getColor(from + 1) + '"></i> ' + parseFloat(from).toFixed(0) + '+'); 
 			labels.push( '<i style="background:' + getColor(from + 1) + '"></i> ' + parseInt(from).toLocaleString() + '+'); 
 		} else {
-			//labels.push( '<i style="background:' + getColor(from + 1) + '"></i> ' + parseFloat(from).toFixed(0) + '&ndash;' + parseFloat(to).toFixed(0));
-			labels.push( '<i style="background:' + getColor(from + 1) + '"></i> ' + parseInt(from).toLocaleString() + '&ndash;' + parseFloat(to).toFixed(0));
+			labels.push( '<i style="background:' + getColor(from + 1) + '"></i> ' + parseInt(from).toLocaleString() + ' &ndash; ' + parseFloat(to).toFixed(0));
 		}
+
 	}
 
-	//legendDiv.innerHTML = '<b>Legend</b> | <span onclick="updateStats();">Stats</span><br> per 100k<br>' + labels.join('<br>');
-	//var legendHeader = '<b>Legend</b> | <span onclick="updateStats();">Stats</span><p> ';
-	var legendHeader = '<b>Legend</b> | <button id="statsbut" onclick="updateStats();">Stats</button><p> ';
+	var legHeader = '<b>Legend</b> | <button id="statsbut" onclick="updateStats();">Statistics</button><p> ';
 	if (currentRate == 'cwvc_per100k') {
-		legendHeader += crimePretty[currentRate]+ ", Million USD per 100k persons";
+		legHeader += crimePretty[currentRate]+ ", Million USD per 100k persons";
 	} else {
-		legendHeader += crimePretty[currentRate]+ " per 100k persons";
+		legHeader += crimePretty[currentRate]+ " per 100k persons";
 	}
-	legendHeader +="</p>";
-	legendDiv.innerHTML = legendHeader + labels.join('<br>');
+	legHeader +="</p>";
+	legendDiv.innerHTML = legHeader + labels.join('<br>');
 	return legendDiv;
+}
 
-};
 function updateStats() {
 	gs1.info();
-	//var html = '<span onclick="updateLegend();">Legend</span> | <b>Stats</b><p>';
-	var html = '<button id="legendbut" onclick="updateLegend();">Legend</button> | <b>Stats</b><p>';
+	var html = '<button id="legendbut" onclick="updateLegend();">Legend</button> | <b>Statistics</b><p>';
 	if (currentRate == 'cwvc_per100k') {
 		html += crimePretty[currentRate]+ ", Million USD per 100k persons";
 	} else {
@@ -452,39 +472,8 @@ function updateStats() {
 	return legendDiv;
 }
 
-function updateLegend() {
-	var grades = currentQuantileArray, //[0, 10, 20, 50, 100, 200, 500, 1000],
-	labels = [],
-		from, to;
-
-	for (var i = 0; i < grades.length; i++) {
-		from = grades[i];
-		to = grades[i + 1];
-
-		if (isNaN(to)) {
-			//labels.push( '<i style="background:' + getColor(from + 1) + '"></i> ' + parseFloat(from).toFixed(0) + '+'); 
-			labels.push( '<i style="background:' + getColor(from + 1) + '"></i> ' + parseInt(from).toLocaleString() + '+'); 
-		} else {
-			//labels.push( '<i style="background:' + getColor(from + 1) + '"></i> ' + parseFloat(from).toFixed(0) + '&ndash;' + parseFloat(to).toFixed(0));
-			labels.push( '<i style="background:' + getColor(from + 1) + '"></i> ' + parseInt(from).toLocaleString() + '&ndash;' + parseFloat(to).toFixed(0));
-		}
-
-	}
-
-	//var legHeader = '<b>Legend</b> | <span onclick="updateStats();">Stats</span><p> ';
-	var legHeader = '<b>Legend</b> | <button id="statsbut" onclick="updateStats();">Stats</button><p> ';
-	if (currentRate == 'cwvc_per100k') {
-		legHeader += crimePretty[currentRate]+ ", Million USD per 100k persons";
-	} else {
-		legHeader += crimePretty[currentRate]+ " per 100k persons";
-	}
-	legHeader +="</p>";
-	legendDiv.innerHTML = legHeader + labels.join('<br>');
-	return legendDiv;
-}
 
 legend.addTo(map);
-
 
 $("#crimetype" ).change( drawCrimeMap );
 $("#selyear" ).change( drawCrimeMap );
